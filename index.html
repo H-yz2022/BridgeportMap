@@ -34,7 +34,7 @@
             max-height: 800px;
             border-radius: 1rem;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            border: 0; /* Changed from 2px solid #e5e7eb to 0 */
+            border: 0;
         }
         .info-box {
             position: absolute;
@@ -72,9 +72,15 @@
     <script src="./lib/leaflet.markercluster.js"></script>
     <script src="./lib/leaflet-ant-path.js"></script>
     <script src="./lib/Control.MiniMap.min.js"></script>
+    <script src="./lib/leaflet-geometryutil.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+
+            // NEW: Fix for missing marker icons when using local files.
+            // This is necessary because Leaflet expects the images to be in a specific path.
+            L.Icon.Default.imagePath = './lib/images/';
+
             // Function to show a message in the info box
             function showMessage(text, duration = 3000) {
                 const infoBox = document.getElementById('info-message');
