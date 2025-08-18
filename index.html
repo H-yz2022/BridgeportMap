@@ -3,170 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leaflet Map with Drawing</title>
-    <link rel="stylesheet" href="./lib/leaflet.css" />
-    <link rel="stylesheet" href="./lib/leaflet.draw.css" />
-    <link rel="stylesheet" href="./lib/MarkerCluster.css" />
-    <link rel="stylesheet" href="./lib/MarkerCluster.Default.css" />
-    <link rel="stylesheet" href="./lib/Control.MiniMap.min.css" />
+    <title>Interactive Map</title>
+    <!--
+        This section loads all the required CSS files from your 'lib' directory.
+        These paths are relative to your index.html file.
+    -->
+    <link rel="stylesheet" href="lib/leaflet.css" />
+    <link rel="stylesheet" href="lib/leaflet.draw.css" />
+    <link rel="stylesheet" href="lib/leaflet.markercluster.css" />
+    <link rel="stylesheet" href="lib/leaflet.markercluster.default.css" />
+    <link rel="stylesheet" href="lib/Control.MiniMap.min.css" />
+    <link rel="stylesheet" href="lib/all.min.css" />
 
     <style>
+        /* This CSS ensures the map takes up the full browser window */
         body, html {
             height: 100%;
             margin: 0;
             padding: 0;
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-        }
-        #map-container {
-            width: 100%;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 2rem;
-            box-sizing: border-box;
         }
         #map {
-            width: 90%;
-            height: 90%;
-            max-width: 1200px;
-            max-height: 800px;
-            border-radius: 1rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            border: 0;
-        }
-        .info-box {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 1rem 2rem;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            text-align: center;
-            font-family: 'Inter', sans-serif;
-            font-size: 0.875rem;
-            color: #374151;
-            z-index: 1000;
-            transition: all 0.3s ease;
-            opacity: 0;
-            visibility: hidden;
-        }
-        .info-box.visible {
-            opacity: 1;
-            visibility: visible;
+            height: 100vh;
+            width: 100vw;
         }
     </style>
 </head>
 <body>
+    <!-- This is the container for the map. Leaflet will render the map inside this div. -->
+    <div id="map"></div>
 
-    <div id="map-container">
-        <div id="map"></div>
-    </div>
-    <div id="info-message" class="info-box"></div>
-
-    <script src="./lib/leaflet.js"></script>
-    <script src="./lib/leaflet.draw.js"></script>
-    <script src="./lib/leaflet.markercluster.js"></script>
-    <script src="./lib/leaflet-ant-path.js"></script>
-    <script src="./lib/Control.MiniMap.min.js"></script>
-    <script src="./lib/leaflet-geometryutil.js"></script>
+    <!--
+        This section loads all the required JavaScript libraries.
+        The order is important: leaflet.js must be loaded first.
+    -->
+    <script src="lib/leaflet.js"></script>
+    <script src="lib/leaflet.draw.js"></script>
+    <script src="lib/leaflet.markercluster.js"></script>
+    <script src="lib/Control.MiniMap.min.js"></script>
+    <script src="lib/leaflet-ant-path.js"></script>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        // Use a self-invoking anonymous function to avoid polluting the global scope.
+        (async function() {
+            // Initialize the map, setting its center location and initial zoom level, just like in your Python code.
+            const map = L.map('map').setView([41.153380, -73.278997], 12);
 
-            // NEW: Fix for missing marker icons when using local files.
-            // This is necessary because Leaflet expects the images to be in a specific path.
-            L.Icon.Default.imagePath = './lib/images/';
-
-            // Function to show a message in the info box
-            function showMessage(text, duration = 3000) {
-                const infoBox = document.getElementById('info-message');
-                infoBox.textContent = text;
-                infoBox.classList.add('visible');
-                setTimeout(() => {
-                    infoBox.classList.remove('visible');
-                }, duration);
-            }
-
-            // Initialize the map
-            const map = L.map('map').setView([45.5230, -122.6764], 13);
-
-            // Add OpenStreetMap tiles
-            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            // Add the 'CartoDB positron' tile layer. This is the base map.
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 19
             }).addTo(map);
 
-            // Create a feature group to hold drawn layers
-            const drawnItems = new L.FeatureGroup();
-            map.addLayer(drawnItems);
-
-            // Initialize the draw control and pass it the feature group
-            const drawControl = new L.Control.Draw({
-                edit: {
-                    featureGroup: drawnItems
-                }
-            });
-            map.addControl(drawControl);
-
-            // Listen for the "draw:created" event
-            map.on(L.Draw.Event.CREATED, function (e) {
-                const layer = e.layer;
-                const type = e.layerType;
-
-                let message = `You drew a ${type}.`;
-                drawnItems.addLayer(layer);
-
-                // Check if the drawn shape is a polygon or rectangle
-                if (type === 'polygon' || type === 'rectangle') {
-                    // Get the area in square meters
-                    const area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
-                    // Get the length of the perimeter in meters
-                    const length = L.GeometryUtil.geodesicLength(layer.getLatLngs()[0]);
-                    message += ` Its area is approx. ${(area / 1000000).toFixed(2)} km² and its perimeter is approx. ${(length / 1000).toFixed(2)} km.`;
-                } else if (type === 'polyline') {
-                    // Get the length of the polyline in meters
-                    const length = L.GeometryUtil.geodesicLength(layer.getLatLngs());
-                    message += ` Its length is approx. ${(length / 1000).toFixed(2)} km.`;
-                } else if (type === 'circle') {
-                    const radius = layer.getRadius();
-                    message += ` Its radius is approx. ${(radius / 1000).toFixed(2)} km.`;
-                }
-                
-                showMessage(message);
-            });
-            
-            // Listen for the "draw:edited" event
-            map.on(L.Draw.Event.EDITED, function (e) {
-                const layers = e.layers;
-                layers.eachLayer(function (layer) {
-                    let message = `You edited a shape.`;
-                    // Check if the edited shape is a polygon or rectangle
-                    if (layer instanceof L.Polygon) {
-                        const area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
-                        const length = L.GeometryUtil.geodesicLength(layer.getLatLngs()[0]);
-                        message = `You edited a polygon. Its new area is approx. ${(area / 1000000).toFixed(2)} km² and its new perimeter is approx. ${(length / 1000).toFixed(2)} km.`;
-                    } else if (layer instanceof L.Polyline) {
-                         const length = L.GeometryUtil.geodesicLength(layer.getLatLngs());
-                         message = `You edited a polyline. Its new length is approx. ${(length / 1000).toFixed(2)} km.`;
-                    } else if (layer instanceof L.Circle) {
-                        const radius = layer.getRadius();
-                        message = `You edited a circle. Its new radius is approx. ${(radius / 1000).toFixed(2)} km.`;
-                    }
-                    showMessage(message);
+            // --- Function to create the tooltip HTML, similar to your GeoJsonTooltip in Python ---
+            function createTooltipContent(properties) {
+                const fields = ['TAZ_ID', 'TOWN', 'AREA', 'COUNTY', 'POP2019', 'HH2019', 'EMP2019', 'NRET2019'];
+                let content = '';
+                fields.forEach(field => {
+                    const value = properties[field] !== undefined ? properties[field] : 'N/A';
+                    content += `<b>${field}:</b> ${value}<br>`;
                 });
-            });
+                return content;
+            }
 
-            // Listen for the "draw:deleted" event
-            map.on(L.Draw.Event.DELETED, function (e) {
-                const layers = e.layers;
-                const count = layers.getLayers().length;
-                showMessage(`You deleted ${count} shape(s).`);
-            });
-        });
+            // --- Replicating the Population Density Colormap from Python ---
+            // A simple JavaScript function to get a color based on the value.
+            // This mimics your `branca.colormap.linear.YlGn_09.scale`.
+            const colorScale = (value) => {
+                const max = 7215; // Max value from your Python code's logic (taz.POP2019.max())
+                if (value === 0) return "#faded1";
+                if (value < max * 0.1) return '#ffffcc';
+                if (value < max * 0.2) return '#d9f0a3';
+                if (value < max * 0.3) return '#addd8e';
+                if (value < max * 0.4) return '#78c679';
+                if (value < max * 0.5) return '#41ab5d';
+                if (value < max * 0.6) return '#238443';
+                if (value < max * 0.7) return '#006837';
+                if (value < max * 0.8) return '#004529';
+                return '#004529';
+            };
+
+            // --- Load and Add the TAZ GeoJSON Layer ---
+            try {
+                // Fetch the GeoJSON data from your 'static' folder.
+                const tazResponse = await fetch('static/TAZ.geojson');
+                if (!tazResponse.ok) {
+                    throw new Error(`Failed to fetch TAZ.geojson: ${tazResponse.statusText}`);
+                }
+                const tazData = await tazResponse.json();
+
+                // Add the GeoJSON layer to the map with styling and tooltips.
+                L.geoJSON(tazData, {
+                    style: (feature) => ({
+                        fillColor: colorScale(feature.properties.POP2019), // Apply the custom color scale
+                        color: 'black',
+                        weight: 0.5,
+                        fillOpacity: 0.3,
+                    }),
+                    onEachFeature: (feature, layer) => {
+                        // Highlight on hover
+                        layer.on('mouseover', () => {
+                            layer.setStyle({
+                                color: 'blue',
+                                weight: 4,
+                            });
+                        });
+                        layer.on('mouseout', () => {
+                            // Reset to original style when not hovered
+                            L.geoJSON(feature, {
+                                style: (f) => ({
+                                    fillColor: colorScale(f.properties.POP2019),
+                                    color: 'black',
+                                    weight: 0.5,
+                                    fillOpacity: 0.3,
+                                })
+                            }).setStyle(layer.feature, layer);
+                        });
+                        // Bind the tooltip
+                        layer.bindTooltip(createTooltipContent(feature.properties));
+                    }
+                }).addTo(map);
+
+            } catch (error) {
+                console.error("Error loading TAZ GeoJSON:", error);
+            }
+
+            // --- Load and Add the Highway GeoJSON Layer ---
+            try {
+                // Fetch the GeoJSON data from your 'static' folder.
+                const highwayResponse = await fetch('static/Highway.geojson');
+                if (!highwayResponse.ok) {
+                    throw new Error(`Failed to fetch Highway.geojson: ${highwayResponse.statusText}`);
+                }
+                const highwayData = await highwayResponse.json();
+
+                // Add the GeoJSON layer to the map with styling and tooltips.
+                L.geoJSON(highwayData, {
+                    style: (feature) => ({
+                        fillColor: 'black',
+                        color: 'red',
+                        weight: 6.0,
+                        fillOpacity: 0.3,
+                    }),
+                    onEachFeature: (feature, layer) => {
+                        // Highlight on hover
+                        layer.on('mouseover', () => {
+                            layer.setStyle({
+                                color: 'blue',
+                                weight: 4,
+                            });
+                        });
+                        layer.on('mouseout', () => {
+                            // Reset to original style
+                            layer.setStyle({
+                                fillColor: 'black',
+                                color: 'red',
+                                weight: 6.0,
+                                fillOpacity: 0.3,
+                            });
+                        });
+                        // Bind the tooltip
+                        const highwayFields = ['TRAFFIC_VO', 'AADT', 'DIRECTION', 'SOV', 'HOV2', 'HOV3', 'FRT', 'LT', 'MT', 'HT'];
+                        const highwayContent = highwayFields.map(field => `<b>${field}:</b> ${feature.properties[field] !== undefined ? feature.properties[field] : 'N/A'}`).join('<br>');
+                        layer.bindTooltip(highwayContent);
+                    }
+                }).addTo(map);
+
+            } catch (error) {
+                console.error("Error loading Highway GeoJSON:", error);
+            }
+
+            // --- Add the MiniMap plugin to the map ---
+            new L.Control.MiniMap(L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+                attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+            }), {
+                toggleDisplay: true
+            }).addTo(map);
+
+        })(); // End of the self-invoking function
     </script>
 </body>
 </html>
