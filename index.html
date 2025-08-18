@@ -1,16 +1,15 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Map</title>
+    <title>Bridgeport Map</title>
 
     <!-- Leaflet CSS for map styling -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfDSDr+95o3A7Y8ae3g3Ifg2YfO7lO4s=" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <!-- Leaflet JS for map functionality -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-200j0RjB9fOQ0x/F3t0pB5nK5C6bV2p3i/G+OQ6hV24=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <!-- Leaflet plugins and their dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
@@ -25,7 +24,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.draw/1.0.4/leaflet.draw.css" />
 
     <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ96j7dE0xIe7zB4G2p/u8XvJ/vJg0d7+w+P85G0Q6B9l+V9H/A1A6G8P7k0g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     
     <style>
         /* The map container MUST have a height */
@@ -47,12 +46,6 @@
         .container {
             max-width: 1200px;
             width: 100%;
-        }
-        h1 {
-            text-align: center;
-            color: #1e3a5f;
-            margin-bottom: 1.5rem;
-            font-size: 2.5rem;
         }
         .info {
             background-color: #ffffff;
@@ -83,9 +76,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>Connecticut Map with GeoJSON Data</h1>
         <div class="info">
-            <p>This interactive map displays TAZ and Highway data for Connecticut.</p>
+            <p>This interactive map displays TAZ and Highway data for Bridgeport.</p>
         </div>
         <div id="map"></div>
     </div>
