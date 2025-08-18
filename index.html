@@ -3,248 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bridgeport Map</title>
-
-    <!-- Leaflet CSS for map styling -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
-    <!-- Leaflet JS for map functionality -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <!-- Leaflet plugins and their dependencies -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-ant-path/1.3.0/leaflet-ant-path.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.fullscreen/1.0.2/Control.FullScreen.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.fullscreen/1.0.2/Control.FullScreen.min.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-minimap/3.6.1/Control.MiniMap.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-minimap/3.6.1/Control.MiniMap.min.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.draw/1.0.4/leaflet.draw.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.draw/1.0.4/leaflet.draw.css" />
-
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    
+    <title>Leaflet Map with Drawing</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQ7oY0ssIjTXtkwD/Q0GkC91vL" crossorigin=""/>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20n6n2y8F9y9V0Gv+a30B3jK0wL8j9b/x4Q59f3N" crossorigin=""></script>
+    <!-- Leaflet.fullscreen CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/leaflet.fullscreen@4.0.0/Control.FullScreen.min.css" rel="stylesheet" />
+    <!-- Leaflet.draw CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.min.css" />
     <style>
-        /* Full-page CSS */
-        html, body, #map {
+        body, html {
             height: 100%;
             margin: 0;
             padding: 0;
-            width: 100%;
             font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
         }
-
-        /* Custom style for the GeoJSONTooltip */
-        .leaflet-tooltip {
-            background: rgba(255, 255, 255, 0.9);
-            border: 1px solid #ccc;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border-radius: 8px;
-            padding: 8px;
+        #map-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            box-sizing: border-box;
         }
-        .leaflet-tooltip-pane {
-            pointer-events: none;
+        #map {
+            width: 90%;
+            height: 90%;
+            max-width: 1200px;
+            max-height: 800px;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border: 2px solid #e5e7eb;
+        }
+        .info-box {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            text-align: center;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.875rem;
+            color: #374151;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            opacity: 0;
+            visibility: hidden;
+        }
+        .info-box.visible {
+            opacity: 1;
+            visibility: visible;
         }
     </style>
+    <!-- Leaflet.fullscreen JS -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.fullscreen@4.0.0/Control.FullScreen.min.js"></script>
+    <!-- Leaflet.draw JS -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.min.js"></script>
 </head>
 <body>
-    <div id="map"></div>
+
+    <div id="map-container">
+        <div id="map"></div>
+    </div>
+    <div id="info-message" class="info-box"></div>
 
     <script>
-        // Use a function to map population to colors, similar to the Python code.
-        const colorScale = (value) => {
-            const colors = ['#f7fcf0', '#e0f3db', '#ccebc5', '#a8ddb5', '#7bccc4', '#4eb3d3', '#2b8cbe', '#0868ac', '#084081'];
-            const maxPop = 30000; // A reasonable max value for the scale
-            if (value === 0) return '#faded1';
-            const index = Math.min(Math.floor(value / maxPop * (colors.length - 1)), colors.length - 1);
-            return colors[index];
-        };
-
-        // Initialize the map, matching the location and zoom from your Python code.
-        const map = L.map('map').setView([41.153380, -73.278997], 12);
-
-        // Add the base tile layer
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            subdomains: 'abcd',
-            maxZoom: 20
-        }).addTo(map);
-
-        // =========================================================================
-        // TODO: PASTE YOUR CONVERTED GEOJSON DATA HERE
-        //
-        // 1. Run the Python script provided above to convert TAZ.shp and Highway.shp to GeoJSON files.
-        // 2. Open those GeoJSON files in a text editor.
-        // 3. Copy the ENTIRE content of each file and paste it into the respective variables below.
-        // =========================================================================
-        
-        const tazGeoJson = {
-            // PASTE THE CONTENTS OF TAZ.geojson HERE
-            "type": "FeatureCollection",
-            "features": [] // Replace this empty array with your GeoJSON features
-        };
-
-        const highwayGeoJson = {
-            // PASTE THE CONTENTS OF Highway.geojson HERE
-            "type": "FeatureCollection",
-            "features": [] // Replace this empty array with your GeoJSON features
-        };
-        
-        // =========================================================================
-        // END OF TODO SECTION
-        // =========================================================================
-
-        // Add the TAZ layer to the map
-        const tazLayer = L.geoJSON(tazGeoJson, {
-            style: (feature) => ({
-                fillColor: colorScale(feature.properties.POP2019),
-                color: 'black',
-                weight: 0.5,
-                fillOpacity: 0.3
-            }),
-            onEachFeature: (feature, layer) => {
-                layer.on('mouseover', function (e) {
-                    this.setStyle({ color: 'blue', weight: 4 });
-                    // Create and bind tooltip on hover
-                    const tooltipContent = `
-                        <b>TAZ ID:</b> ${feature.properties.TAZ_ID}<br>
-                        <b>TOWN:</b> ${feature.properties.TOWN}<br>
-                        <b>AREA:</b> ${feature.properties.AREA}<br>
-                        <b>COUNTY:</b> ${feature.properties.COUNTY}<br>
-                        <b>POP2019:</b> ${feature.properties.POP2019}<br>
-                        <b>HH2019:</b> ${feature.properties.HH2019}<br>
-                        <b>EMP2019:</b> ${feature.properties.EMP2019}<br>
-                        <b>NRET2019:</b> ${feature.properties.NRET2019}
-                    `;
-                    layer.bindTooltip(tooltipContent, { permanent: false, sticky: true }).openTooltip();
-                });
-                layer.on('mouseout', function (e) {
-                    this.setStyle({ color: 'black', weight: 0.5 });
-                    layer.closeTooltip();
-                });
+        document.addEventListener('DOMContentLoaded', () => {
+            // Function to show a message in the info box
+            function showMessage(text, duration = 3000) {
+                const infoBox = document.getElementById('info-message');
+                infoBox.textContent = text;
+                infoBox.classList.add('visible');
+                setTimeout(() => {
+                    infoBox.classList.remove('visible');
+                }, duration);
             }
-        }).addTo(map);
 
-        // Add the Highway layer to the map
-        const highwayLayer = L.geoJSON(highwayGeoJson, {
-            style: (feature) => ({
-                fillColor: 'black',
-                color: 'red',
-                weight: 6.0,
-                fillOpacity: 0.3
-            }),
-            onEachFeature: (feature, layer) => {
-                layer.on('mouseover', function (e) {
-                    this.setStyle({ color: 'blue', weight: 4 });
-                    const tooltipContent = `
-                        <b>TRAFFIC_VO:</b> ${feature.properties.TRAFFIC_VO}<br>
-                        <b>AADT:</b> ${feature.properties.AADT}<br>
-                        <b>DIRECTION:</b> ${feature.properties.DIRECTION}<br>
-                        <b>SOV:</b> ${feature.properties.SOV}<br>
-                        <b>HOV2:</b> ${feature.properties.HOV2}<br>
-                        <b>HOV3:</b> ${feature.properties.HOV3}<br>
-                        <b>FRT:</b> ${feature.properties.FRT}<br>
-                        <b>LT:</b> ${feature.properties.LT}<br>
-                        <b>MT:</b> ${feature.properties.MT}<br>
-                        <b>HT:</b> ${feature.properties.HT}
-                    `;
-                    layer.bindTooltip(tooltipContent, { permanent: false, sticky: true }).openTooltip();
+            // Initialize the map
+            const map = L.map('map', {
+                fullscreenControl: true,
+            }).setView([45.5230, -122.6764], 13);
+
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(map);
+
+            // Create a feature group to hold drawn layers
+            const drawnItems = new L.FeatureGroup();
+            map.addLayer(drawnItems);
+
+            // Initialize the draw control and pass it the feature group
+            const drawControl = new L.Control.Draw({
+                edit: {
+                    featureGroup: drawnItems
+                }
+            });
+            map.addControl(drawControl);
+
+            // Listen for the "draw:created" event
+            map.on(L.Draw.Event.CREATED, function (e) {
+                const layer = e.layer;
+                const type = e.layerType;
+
+                let message = `You drew a ${type}.`;
+                drawnItems.addLayer(layer);
+
+                // Check if the drawn shape is a polygon or rectangle
+                if (type === 'polygon' || type === 'rectangle') {
+                    // Get the area in square meters
+                    const area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
+                    // Get the length of the perimeter in meters
+                    const length = L.GeometryUtil.geodesicLength(layer.getLatLngs()[0]);
+                    message += ` Its area is approx. ${(area / 1000000).toFixed(2)} km² and its perimeter is approx. ${(length / 1000).toFixed(2)} km.`;
+                } else if (type === 'polyline') {
+                    // Get the length of the polyline in meters
+                    const length = L.GeometryUtil.geodesicLength(layer.getLatLngs());
+                    message += ` Its length is approx. ${(length / 1000).toFixed(2)} km.`;
+                } else if (type === 'circle') {
+                    const radius = layer.getRadius();
+                    message += ` Its radius is approx. ${(radius / 1000).toFixed(2)} km.`;
+                }
+                
+                showMessage(message);
+            });
+            
+            // Listen for the "draw:edited" event
+            map.on(L.Draw.Event.EDITED, function (e) {
+                const layers = e.layers;
+                layers.eachLayer(function (layer) {
+                    let message = `You edited a shape.`;
+                    // Check if the edited shape is a polygon or rectangle
+                    if (layer instanceof L.Polygon) {
+                        const area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
+                        const length = L.GeometryUtil.geodesicLength(layer.getLatLngs()[0]);
+                        message = `You edited a polygon. Its new area is approx. ${(area / 1000000).toFixed(2)} km² and its new perimeter is approx. ${(length / 1000).toFixed(2)} km.`;
+                    } else if (layer instanceof L.Polyline) {
+                         const length = L.GeometryUtil.geodesicLength(layer.getLatLngs());
+                         message = `You edited a polyline. Its new length is approx. ${(length / 1000).toFixed(2)} km.`;
+                    } else if (layer instanceof L.Circle) {
+                        const radius = layer.getRadius();
+                        message = `You edited a circle. Its new radius is approx. ${(radius / 1000).toFixed(2)} km.`;
+                    }
+                    showMessage(message);
                 });
-                layer.on('mouseout', function (e) {
-                    this.setStyle({ color: 'red', weight: 6.0 });
-                    layer.closeTooltip();
-                });
-            }
-        }).addTo(map);
+            });
 
-        // Add markers, circles, and other elements
-        L.marker([41.134673, -73.292802]).bindPopup('EXIT 19 - OFF').addTo(map);
-        L.circleMarker([41.139500, -73.285505], { radius: 30, color: 'blue', fillColor: 'blue', fillOpacity: 0.5 }).bindPopup('EXIT 20 - ON').addTo(map);
-        L.circle([41.153380, -73.278997], { radius: 300, color: 'crimson', fillColor: 'blue', fillOpacity: 0.5 }).bindPopup('I-95 PEL Study Area').addTo(map);
+            // Listen for the "draw:deleted" event
+            map.on(L.Draw.Event.DELETED, function (e) {
+                const layers = e.layers;
+                const count = layers.getLayers().length;
+                showMessage(`You deleted ${count} shape(s).`);
+            });
 
-        // Add MiniMap plugin
-        new L.Control.MiniMap(L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png')).addTo(map);
-
-        // Add AntPath plugin with the correct function call
-        const antPathCoords = [
-            [41.120, -73.300], [41.130, -73.290], [41.140, -73.280], [41.150, -73.270], [41.160, -73.260]
-        ];
-        L.antPath(antPathCoords, {
-            color: 'blue',
-            weight: 5,
-            delay: 1000,
-            dashArray: [10, 20],
-            pulseColor: 'red'
-        }).addTo(map);
-
-        // Add custom markers using DivIcons to match BeautifyIcon's look
-        const planeIcon = L.divIcon({
-            className: 'custom-div-icon',
-            html: '<i class="fa-solid fa-plane" style="color:#b3334f; font-size: 24px;"></i>',
-            iconSize: [30, 42],
-            iconAnchor: [15, 42]
+            // Listen for fullscreen events
+            map.on('fullscreenchange', function (e) {
+                if (map.isFullscreen()) {
+                    showMessage('Entered fullscreen mode!');
+                } else {
+                    showMessage('Exited fullscreen mode!');
+                }
+            });
         });
-        L.marker([41.2, -73.3], { icon: planeIcon }).bindPopup("Portland International Airport").addTo(map);
-
-        const numberIcon = L.divIcon({
-            className: 'custom-div-icon',
-            html: '<div style="background-color:#fff; border-radius:50%; border:2px solid #00ABDC; width:30px; height:30px; display:flex; justify-content:center; align-items:center; color:#00ABDC; font-weight:bold;">10</div>',
-            iconSize: [30, 30],
-            iconAnchor: [15, 15]
-        });
-        L.marker([41.2, -73.3], { icon: numberIcon }).bindPopup("Marker #10 – Vancouver, BC").addTo(map);
-
-        // Add Draw plugin
-        const drawnItems = new L.FeatureGroup();
-        map.addLayer(drawnItems);
-        const drawControl = new L.Control.Draw({
-            edit: {
-                featureGroup: drawnItems
-            }
-        });
-        map.addControl(drawControl);
-
-        // Add MarkerCluster and Feature Groups
-        const mcg = L.markerClusterGroup({ showCoverageOnHover: false });
-        const g1 = L.featureGroup.subGroup(mcg, { name: "group1" });
-        const g2 = L.featureGroup.subGroup(mcg, { name: "group2" });
-        map.addLayer(mcg);
-        map.addLayer(g1);
-        map.addLayer(g2);
-        
-        L.marker([41.160, -73.280]).addTo(g1);
-        L.marker([41.180, -73.270]).addTo(g1);
-        L.marker([41.190, -73.270]).addTo(g2);
-        L.marker([41.170, -73.280]).addTo(g2);
-        
-        // Use a FeatureGroup and L.control.layers for managing layers
-        const parent_group = L.featureGroup([
-            L.circle([41.190, -73.258997], {
-                radius: 300,
-                color: 'red',
-                fill: true,
-                fillOpacity: 0.3,
-            }).bindPopup('Study Area'),
-            L.marker([41.190, -73.292802], { icon: L.icon({ iconUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="blue"/></svg>', iconSize: [24, 24], iconAnchor: [12, 24] }) }).bindPopup('EXIT 19 - OFF'),
-            L.marker([41.190, -73.285505], { icon: L.icon({ iconUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="green"/></svg>', iconSize: [24, 24], iconAnchor: [12, 24] }) }).bindPopup('EXIT 20 - ON')
-        ]);
-        parent_group.addTo(map);
-
-        // Add Fullscreen plugin
-        map.addControl(new L.Control.Fullscreen());
-
-        // Add Layer Control
-        const baseMaps = { "CartoDB Positron": L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png') };
-        const overlayMaps = {
-            "TAZ Population": tazLayer,
-            "Highway Lines": highwayLayer,
-            "Clustered Markers": mcg,
-            "Parent Group": parent_group
-        };
-        L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
-
     </script>
 </body>
 </html>
