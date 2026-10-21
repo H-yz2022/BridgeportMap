@@ -49,9 +49,9 @@
             // Initialize the map, setting its center location and initial zoom level, just like in your Python code.
             const map = L.map('map').setView([41.153380, -73.278997], 12);
 
-            // Add the 'CartoDB positron' tile layer. This is the base map.
+            // Base map: Esri light-gray canvas (CARTO basemaps now require an API key).
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-                maxNativeZoom: 16,
+        maxNativeZoom: 16,
                 attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
                 maxZoom: 19
             }).addTo(map);
@@ -175,10 +175,9 @@
             }
 
             // --- Add the MiniMap plugin to the map ---
-            new L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-                maxNativeZoom: 16,
+            new L.Control.MiniMap(L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        maxNativeZoom: 16,
                 attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
-                maxZoom: 19
             }), {
                 toggleDisplay: true
             }).addTo(map);
